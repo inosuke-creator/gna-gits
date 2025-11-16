@@ -1,4 +1,4 @@
---// NezukoHub UI Library (Rayfield Copy with Minimize, Close & Working Toggles)
+--// NezukoHub UI Library (Rayfield Copy with Minimize, Close & Scrollable Tabs)
 
 local NezukoHub = {}
 NezukoHub.__index = NezukoHub
@@ -51,7 +51,7 @@ function NezukoHub:CreateWindow(config)
     minimize.TextSize = 20
     minimize.TextColor3 = Color3.new(1,1,1)
     minimize.BackgroundColor3 = Color3.fromRGB(50,50,50)
-    
+
     local minimized = false
     minimize.MouseButton1Click:Connect(function()
         minimized = not minimized
@@ -85,10 +85,11 @@ function NezukoHub:CreateWindow(config)
     return Window
 end
 
--- Create a tab
+-- Create a tab with scrollable page
 function NezukoHub:CreateTab(config)
     local Tab = {}
 
+    -- Tab button
     local button = Instance.new("TextButton")
     button.Parent = self.Main
     button.Size = UDim2.new(0, 120, 0, 28)
@@ -100,17 +101,23 @@ function NezukoHub:CreateTab(config)
     button.TextSize = 14
     button.AutoButtonColor = true
 
-    local page = Instance.new("Frame")
+    -- Scrolling frame for the tab page
+    local page = Instance.new("ScrollingFrame")
     page.Name = "Page"
     page.Parent = self.Main
     page.Size = UDim2.new(1, -140, 1, -60)
     page.Position = UDim2.new(0, 135, 0, 50)
     page.BackgroundColor3 = Color3.fromRGB(30,30,30)
     page.Visible = false
+    page.CanvasSize = UDim2.new(0,0,0,0)
+    page.ScrollBarThickness = 6
+    page.AutomaticCanvasSize = Enum.AutomaticSize.Y
+    page.VerticalScrollBarInset = Enum.ScrollBarInset.ScrollBar
 
+    -- Show/hide page when tab clicked
     button.MouseButton1Click:Connect(function()
         for _, v in pairs(self.Main:GetChildren()) do
-            if v:IsA("Frame") and v.Name == "Page" then
+            if v:IsA("ScrollingFrame") and v.Name == "Page" then
                 v.Visible = false
             end
         end
@@ -118,7 +125,7 @@ function NezukoHub:CreateTab(config)
     end)
 
     Tab.Page = page
-    Tab.TogglesCount = 0 -- Track toggles for proper positioning
+    Tab.TogglesCount = 0 -- track toggles for proper stacking
 
     setmetatable(Tab, {__index = NezukoHub})
     return Tab
@@ -133,7 +140,7 @@ function NezukoHub:CreateToggle(config)
     local btn = Instance.new("TextButton")
     btn.Parent = Tab.Page
     btn.Size = UDim2.new(1, -20, 0, 32)
-    btn.Position = UDim2.new(0, 10, 0, 10 + (Tab.TogglesCount - 1) * 40) -- stack toggles
+    btn.Position = UDim2.new(0, 10, 0, 10 + (Tab.TogglesCount - 1) * 40)
     btn.Text = config.Name or "Toggle"
     btn.Font = Enum.Font.Gotham
     btn.TextSize = 14
