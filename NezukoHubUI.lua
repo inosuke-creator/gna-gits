@@ -1,10 +1,11 @@
---// NezukoHub UI Library (Rayfield Copy with Minimize & Close)
+--// NezukoHub UI Library (Rayfield Copy with Minimize, Close & Working Toggles)
 
 local NezukoHub = {}
 NezukoHub.__index = NezukoHub
 
 local UIS = game:GetService("UserInputService")
 
+-- Create main window
 function NezukoHub:CreateWindow(config)
     local Window = {}
 
@@ -80,16 +81,11 @@ function NezukoHub:CreateWindow(config)
     Window.GUI = gui
     Window.Main = main
 
-    setmetatable(Window, {
-        __index = function(_, k)
-            return NezukoHub[k]
-        end
-    })
-
+    setmetatable(Window, {__index = NezukoHub})
     return Window
 end
 
--- Example: Tabs
+-- Create a tab
 function NezukoHub:CreateTab(config)
     local Tab = {}
 
@@ -122,9 +118,38 @@ function NezukoHub:CreateTab(config)
     end)
 
     Tab.Page = page
-    setmetatable(Tab, { __index = NezukoHub })
+    Tab.TogglesCount = 0 -- Track toggles for proper positioning
 
+    setmetatable(Tab, {__index = NezukoHub})
     return Tab
+end
+
+-- Create toggle inside a tab
+function NezukoHub:CreateToggle(config)
+    local Tab = config.Tab
+    if not Tab then return end
+    Tab.TogglesCount = (Tab.TogglesCount or 0) + 1
+
+    local btn = Instance.new("TextButton")
+    btn.Parent = Tab.Page
+    btn.Size = UDim2.new(1, -20, 0, 32)
+    btn.Position = UDim2.new(0, 10, 0, 10 + (Tab.TogglesCount - 1) * 40) -- stack toggles
+    btn.Text = config.Name or "Toggle"
+    btn.Font = Enum.Font.Gotham
+    btn.TextSize = 14
+    btn.TextColor3 = Color3.new(1,1,1)
+    btn.BackgroundColor3 = Color3.fromRGB(45,45,45)
+
+    local state = false
+    btn.MouseButton1Click:Connect(function()
+        state = not state
+        btn.BackgroundColor3 = state and Color3.fromRGB(0,170,0) or Color3.fromRGB(45,45,45)
+        if config.Callback then
+            pcall(config.Callback, state)
+        end
+    end)
+
+    return btn
 end
 
 return NezukoHub
