@@ -159,13 +159,12 @@ function NezukoHub:CreateToggle(config)
     return btn
 end
 
--- Create a teleport list inside a tab (2 buttons per row, fits frame)
+-- Create a teleport list inside a tab (1 per row, scrollable, styled like home tab)
 function NezukoHub:CreateTeleportList(config)
     local Tab = config.Tab
     local destinations = config.Destinations
     if not Tab or not destinations then return end
 
-    -- Keep track of Y offset for existing toggles
     Tab.TogglesCount = Tab.TogglesCount or 0
     local yOffset = 10 + (Tab.TogglesCount * 40)
 
@@ -177,6 +176,7 @@ function NezukoHub:CreateTeleportList(config)
     ScrollFrame.BackgroundColor3 = Color3.fromRGB(50,50,50)
     ScrollFrame.ScrollBarThickness = 6
     ScrollFrame.CanvasSize = UDim2.new(0,0,0,0)
+    ScrollFrame.AutomaticCanvasSize = Enum.AutomaticSize.Y
 
     local internalYOffset = 10
 
@@ -193,29 +193,20 @@ function NezukoHub:CreateTeleportList(config)
     Label.Parent = ScrollFrame
     internalYOffset += 30
 
-    -- Button layout
+    local buttonHeight = 32
     local padding = 10
-    local totalWidth = ScrollFrame.AbsoluteSize.X
-    if totalWidth == 0 then totalWidth = 460 end -- fallback
-    local buttonWidth = (totalWidth - 3*padding) / 2
-    local buttonHeight = 30
-
     local maxY = internalYOffset
 
     for i, data in ipairs(destinations) do
         local name, position = data[1], data[2]
-        local row = math.floor((i-1)/2)
-        local col = (i-1) % 2
-        local xPos = padding + col * (buttonWidth + padding)
-        local ButtonYPos = internalYOffset + row * (buttonHeight + padding)
 
         local TeleButton = Instance.new("TextButton")
-        TeleButton.Size = UDim2.new(0, buttonWidth, 0, buttonHeight)
-        TeleButton.Position = UDim2.new(0, xPos, 0, ButtonYPos)
+        TeleButton.Size = UDim2.new(1, -20, 0, buttonHeight)
+        TeleButton.Position = UDim2.new(0, 10, 0, internalYOffset)
         TeleButton.BackgroundColor3 = Color3.fromRGB(45,45,45)
         TeleButton.TextColor3 = Color3.new(1,1,1)
         TeleButton.Font = Enum.Font.Gotham
-        TeleButton.TextSize = 12
+        TeleButton.TextSize = 14
         TeleButton.Text = name
         TeleButton.Parent = ScrollFrame
 
@@ -225,10 +216,11 @@ function NezukoHub:CreateTeleportList(config)
             end
         end)
 
-        maxY = math.max(maxY, ButtonYPos + buttonHeight)
+        internalYOffset += buttonHeight + padding
+        maxY = internalYOffset
     end
 
-    ScrollFrame.CanvasSize = UDim2.new(0,0,0,maxY + 10)
+    ScrollFrame.CanvasSize = UDim2.new(0, 0, 0, maxY)
 end
 
 return NezukoHub
