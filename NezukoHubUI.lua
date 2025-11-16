@@ -159,13 +159,13 @@ function NezukoHub:CreateToggle(config)
     return btn
 end
 
--- Create a teleport list inside a tab
+-- Create a teleport list inside a tab (2 buttons per row, fits frame)
 function NezukoHub:CreateTeleportList(config)
     local Tab = config.Tab
     local destinations = config.Destinations
     if not Tab or not destinations then return end
 
-    -- Keep track of Y offset
+    -- Keep track of Y offset for existing toggles
     Tab.TogglesCount = Tab.TogglesCount or 0
     local yOffset = 10 + (Tab.TogglesCount * 40)
 
@@ -193,15 +193,21 @@ function NezukoHub:CreateTeleportList(config)
     Label.Parent = ScrollFrame
     internalYOffset += 30
 
-    local buttonWidth, buttonHeight, padding, xPos1 = 226, 30, 10, 10
-    local xPos2 = xPos1 + buttonWidth + 10
+    -- Button layout
+    local padding = 10
+    local totalWidth = ScrollFrame.AbsoluteSize.X
+    if totalWidth == 0 then totalWidth = 460 end -- fallback
+    local buttonWidth = (totalWidth - 3*padding) / 2
+    local buttonHeight = 30
+
     local maxY = internalYOffset
 
     for i, data in ipairs(destinations) do
         local name, position = data[1], data[2]
         local row = math.floor((i-1)/2)
-        local ButtonYPos = (row * (buttonHeight + padding)) + internalYOffset
-        local xPos = (i % 2 == 1) and xPos1 or xPos2
+        local col = (i-1) % 2
+        local xPos = padding + col * (buttonWidth + padding)
+        local ButtonYPos = internalYOffset + row * (buttonHeight + padding)
 
         local TeleButton = Instance.new("TextButton")
         TeleButton.Size = UDim2.new(0, buttonWidth, 0, buttonHeight)
@@ -222,7 +228,7 @@ function NezukoHub:CreateTeleportList(config)
         maxY = math.max(maxY, ButtonYPos + buttonHeight)
     end
 
-    ScrollFrame.CanvasSize = UDim2.new(0,0,0,maxY+10)
+    ScrollFrame.CanvasSize = UDim2.new(0,0,0,maxY + 10)
 end
 
 return NezukoHub
