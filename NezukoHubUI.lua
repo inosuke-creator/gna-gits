@@ -1,5 +1,3 @@
---// NezukoHub UI Library (Rayfield Copy with Minimize, Close & Scrollable Tabs)
-
 local NezukoHub = {}
 NezukoHub.__index = NezukoHub
 
