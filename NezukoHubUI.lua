@@ -221,48 +221,4 @@ function NezukoHub:CreateTeleportList(config)
     ScrollFrame.CanvasSize = UDim2.new(0, 0, 0, maxY)
 end
 
--- First, create the window
-local Window = NezukoHub:CreateWindow({Name = "Nezuko Hub"})
-
--- Create other tabs
-local HomeTab = Window:CreateTab({Name = "Home"})
-local TeleportTab = Window:CreateTab({Name = "Teleport"})
-local AboutTab = Window:CreateTab({Name = "About"})  -- Make sure this exists before adding content
-
--- Now you can safely add content to the About tab
--- Add text label
-local infoLabel = Instance.new("TextLabel")
-infoLabel.Parent = AboutTab.Page
-infoLabel.Size = UDim2.new(1, -20, 0, 60)
-infoLabel.Position = UDim2.new(0, 10, 0, 10)
-infoLabel.Text = "For future updates or sneak peeks, kindly join this Discord server:"
-infoLabel.TextColor3 = Color3.new(1,1,1)
-infoLabel.Font = Enum.Font.Gotham
-infoLabel.TextSize = 14
-infoLabel.TextWrapped = true
-infoLabel.BackgroundTransparency = 1
-infoLabel.TextXAlignment = Enum.TextXAlignment.Left
-
--- Add "Join Discord Server" button
-local discordButton = Instance.new("TextButton")
-discordButton.Parent = AboutTab.Page
-discordButton.Size = UDim2.new(0, 200, 0, 35)
-discordButton.Position = UDim2.new(0, 10, 0, 80)
-discordButton.BackgroundColor3 = Color3.fromRGB(45,45,45)
-discordButton.TextColor3 = Color3.new(1,1,1)
-discordButton.Font = Enum.Font.Gotham
-discordButton.TextSize = 14
-discordButton.Text = "Join Discord Server"
-
--- Button functionality: copy link to clipboard
-local DISCORD_LINK = "https://discord.gg/SY3zUncE9J"
-discordButton.MouseButton1Click:Connect(function()
-    setclipboard(DISCORD_LINK)
-    game.StarterGui:SetCore("SendNotification", {
-        Title = "Nezuko Hub",
-        Text = "Discord link copied to clipboard!",
-        Duration = 3
-    })
-end)
-
 return NezukoHub
