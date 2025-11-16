@@ -221,6 +221,15 @@ function NezukoHub:CreateTeleportList(config)
     ScrollFrame.CanvasSize = UDim2.new(0, 0, 0, maxY)
 end
 
+-- First, create the window
+local Window = NezukoHub:CreateWindow({Name = "Nezuko Hub"})
+
+-- Create other tabs
+local HomeTab = Window:CreateTab({Name = "Home"})
+local TeleportTab = Window:CreateTab({Name = "Teleport"})
+local AboutTab = Window:CreateTab({Name = "About"})  -- Make sure this exists before adding content
+
+-- Now you can safely add content to the About tab
 -- Add text label
 local infoLabel = Instance.new("TextLabel")
 infoLabel.Parent = AboutTab.Page
