@@ -159,4 +159,70 @@ function NezukoHub:CreateToggle(config)
     return btn
 end
 
+-- Create a teleport list inside a tab
+function NezukoHub:CreateTeleportList(config)
+    local Tab = config.Tab
+    local destinations = config.Destinations
+    if not Tab or not destinations then return end
+
+    -- Keep track of Y offset
+    Tab.TogglesCount = Tab.TogglesCount or 0
+    local yOffset = 10 + (Tab.TogglesCount * 40)
+
+    -- Scrolling frame inside the tab page
+    local ScrollFrame = Instance.new("ScrollingFrame")
+    ScrollFrame.Parent = Tab.Page
+    ScrollFrame.Size = UDim2.new(1, -20, 1, -yOffset - 10)
+    ScrollFrame.Position = UDim2.new(0, 10, 0, yOffset)
+    ScrollFrame.BackgroundColor3 = Color3.fromRGB(50,50,50)
+    ScrollFrame.ScrollBarThickness = 6
+    ScrollFrame.CanvasSize = UDim2.new(0,0,0,0)
+
+    local internalYOffset = 10
+
+    -- Info label
+    local Label = Instance.new("TextLabel")
+    Label.Text = "Click a destination to teleport instantly:"
+    Label.Size = UDim2.new(1, -20, 0, 20)
+    Label.Position = UDim2.new(0, 10, 0, internalYOffset)
+    Label.TextColor3 = Color3.new(1,1,1)
+    Label.Font = Enum.Font.Gotham
+    Label.TextSize = 14
+    Label.BackgroundTransparency = 1
+    Label.TextXAlignment = Enum.TextXAlignment.Left
+    Label.Parent = ScrollFrame
+    internalYOffset += 30
+
+    local buttonWidth, buttonHeight, padding, xPos1 = 226, 30, 10, 10
+    local xPos2 = xPos1 + buttonWidth + 10
+    local maxY = internalYOffset
+
+    for i, data in ipairs(destinations) do
+        local name, position = data[1], data[2]
+        local row = math.floor((i-1)/2)
+        local ButtonYPos = (row * (buttonHeight + padding)) + internalYOffset
+        local xPos = (i % 2 == 1) and xPos1 or xPos2
+
+        local TeleButton = Instance.new("TextButton")
+        TeleButton.Size = UDim2.new(0, buttonWidth, 0, buttonHeight)
+        TeleButton.Position = UDim2.new(0, xPos, 0, ButtonYPos)
+        TeleButton.BackgroundColor3 = Color3.fromRGB(45,45,45)
+        TeleButton.TextColor3 = Color3.new(1,1,1)
+        TeleButton.Font = Enum.Font.Gotham
+        TeleButton.TextSize = 12
+        TeleButton.Text = name
+        TeleButton.Parent = ScrollFrame
+
+        TeleButton.MouseButton1Click:Connect(function()
+            if config.Callback then
+                pcall(config.Callback, name, position)
+            end
+        end)
+
+        maxY = math.max(maxY, ButtonYPos + buttonHeight)
+    end
+
+    ScrollFrame.CanvasSize = UDim2.new(0,0,0,maxY+10)
+end
+
 return NezukoHub
