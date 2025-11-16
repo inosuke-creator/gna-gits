@@ -56,7 +56,7 @@ function NezukoHub:CreateWindow(config)
     minimize.MouseButton1Click:Connect(function()
         minimized = not minimized
         for _, v in pairs(main:GetChildren()) do
-            if v:IsA("Frame") and v ~= titleBar then
+            if v ~= titleBar then
                 v.Visible = not minimized
             end
         end
