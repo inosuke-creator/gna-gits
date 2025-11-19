@@ -5,7 +5,7 @@ task.spawn(function()
 
     if GameId == 372226183 then
         loadstring(game:HttpGet("https://raw.githubusercontent.com/inosuke-creator/gna-gits/refs/heads/main/flee-the-facility.lua"))()
-    elseif GameId == 8497165255 then
+    else if GameId == 8497165255 then
         loadstring(game:HttpGet("https://raw.githubusercontent.com/inosuke-creator/gna-gits/refs/heads/main/spin-a-brainrot.lua"))()
     else
         warn("⚠️ No script found for this Game ID:", GameId)
