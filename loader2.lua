@@ -11,6 +11,8 @@ task.spawn(function()
         loadstring(game:HttpGet("https://raw.githubusercontent.com/inosuke-creator/gna-gits/refs/heads/main/fish-it.lua"))()
     elseif GameId == 6739698191 then --VIOLENCE DISTRICT
         loadstring(game:HttpGet("https://raw.githubusercontent.com/inosuke-creator/gna-gits/refs/heads/main/vd"))()
+    elseif GameId == 7671049560 then --THE FORGE
+        loadstring(game:HttpGet("https://raw.githubusercontent.com/inosuke-creator/gna-gits/refs/heads/main/the_forge.lua"))()
     else
         warn("⚠️ No script found for this Game ID:", GameId)
     end
