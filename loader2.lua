@@ -13,6 +13,8 @@ task.spawn(function()
         loadstring(game:HttpGet("https://raw.githubusercontent.com/inosuke-creator/gna-gits/refs/heads/main/vd"))()
     elseif GameId == 7671049560 then --THE FORGE
         loadstring(game:HttpGet("https://raw.githubusercontent.com/inosuke-creator/gna-gits/refs/heads/main/the_forge.lua"))()
+    elseif GameId == 9266873836 then --ANIME FIGHTING SIMULATOR ENDLESS
+        loadstring(game:HttpGet("https://raw.githubusercontent.com/inosuke-creator/gna-gits/refs/heads/main/afse.lua"))()
     else
         warn("⚠️ No script found for this Game ID:", GameId)
     end
