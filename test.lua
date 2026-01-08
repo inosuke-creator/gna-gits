@@ -14,7 +14,7 @@ local function sendExecutionLog(gameName)
 
     local data = {
         ["embeds"] = {{
-            ["title"] = "🌸 Sakura Hub Execution",
+            ["title"] = "Sakura Execution",
             ["description"] = "**Someone just executed the loader!**",
             ["color"] = 16761035,
             ["fields"] = {
@@ -24,7 +24,7 @@ local function sendExecutionLog(gameName)
                 {["name"] = "Game ID", ["value"] = tostring(gameId), ["inline"] = true},
                 {["name"] = "Time", ["value"] = timestamp, ["inline"] = true}
             },
-            ["footer"] = {["text"] = "Sakura Hub Logger • Total Executions: Growing! 💕"}
+            ["footer"] = {["text"] = "Sakura Logger 💕"}
         }}
     }
 
