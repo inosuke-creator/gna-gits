@@ -45,50 +45,33 @@ local function onScriptLoad(gameName)
     sendExecutionLog(gameName)
 end
 
-local function safeHttpGet(url)
-    local req = syn and syn.request or http_request or request or http.request
-    if req then
-        local res = req({Url = url, Method = "GET"})
-        if res and res.StatusCode == 200 then
-            return res.Body
-        end
-    end
-    return nil
-end
-
 task.spawn(function()
     local GameId = game.GameId
     print("Detected Game ID:", GameId)
 
     if GameId == 372226183 then -- FLEE THE FACILITY
         onScriptLoad("Flee The Facility")
-        local script = safeHttpGet("https://raw.githubusercontent.com/inosuke-creator/gna-gits/refs/heads/main/flee-the-facility.lua")
-        if script then loadstring(script)() end
+        loadstring(game:HttpGet("https://raw.githubusercontent.com/inosuke-creator/gna-gits/refs/heads/main/flee-the-facility.lua"))()
 
     elseif GameId == 8497165255 then -- SPIN A BRAINROT
         onScriptLoad("Spin A Brainrot")
-        local script = safeHttpGet("https://raw.githubusercontent.com/inosuke-creator/gna-gits/refs/heads/main/spin-a-brainrot.lua")
-        if script then loadstring(script)() end
+        loadstring(game:HttpGet("https://raw.githubusercontent.com/inosuke-creator/gna-gits/refs/heads/main/spin-a-brainrot.lua"))()
 
     elseif GameId == 6701277882 then -- FISH IT
         onScriptLoad("Fish It")
-        local script = safeHttpGet("https://raw.githubusercontent.com/inosuke-creator/gna-gits/refs/heads/main/fish-it.lua")
-        if script then loadstring(script)() end
+        loadstring(game:HttpGet("https://raw.githubusercontent.com/inosuke-creator/gna-gits/refs/heads/main/fish-it.lua"))()
 
     elseif GameId == 6739698191 then -- VIOLENCE DISTRICT
         onScriptLoad("Violence District")
-        local script = safeHttpGet("https://raw.githubusercontent.com/inosuke-creator/gna-gits/refs/heads/main/vd")
-        if script then loadstring(script)() end
+        loadstring(game:HttpGet("https://raw.githubusercontent.com/inosuke-creator/gna-gits/refs/heads/main/vd"))()
 
     elseif GameId == 7671049560 then -- THE FORGE
         onScriptLoad("The Forge")
-        local script = safeHttpGet("https://raw.githubusercontent.com/inosuke-creator/gna-gits/refs/heads/main/the_forge.lua")
-        if script then loadstring(script)() end
+        loadstring(game:HttpGet("https://raw.githubusercontent.com/inosuke-creator/gna-gits/refs/heads/main/the_forge.lua"))()
 
     elseif GameId == 9266873836 then -- ANIME FIGHTING SIMULATOR ENDLESS
         onScriptLoad("Anime Fighting Simulator: Endless")
-        local script = safeHttpGet("https://raw.githubusercontent.com/inosuke-creator/gna-gits/refs/heads/main/afse.lua")
-        if script then loadstring(script)() end
+        loadstring(game:HttpGet("https://raw.githubusercontent.com/inosuke-creator/gna-gits/refs/heads/main/afse.lua"))()
 
     else
         warn("⚠️ No script found for this Game ID:", GameId)
