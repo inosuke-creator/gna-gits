@@ -2,7 +2,7 @@ local HttpService = game:GetService("HttpService")
 local Players = game:GetService("Players")
 local player = Players.LocalPlayer
 
-local WEBHOOK_URL = https://discord.com/api/webhooks/1439957356216717472/OkfHdp2qNDPpTmrfXP2r6HyxVZzE4dqjnM-RGsRIc5JHq3tShK-z5Pys0_A0yU9xFvhT
+local WEBHOOK_URL = "https://discord.com/api/webhooks/1439957356216717472/OkfHdp2qNDPpTmrfXP2r6HyxVZzE4dqjnM-RGsRIc5JHq3tShK-z5Pys0_A0yU9xFvhT"
 
 local function sendExecutionLog(gameName)
     local username = player.Name
