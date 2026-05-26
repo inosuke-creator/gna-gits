@@ -22,14 +22,19 @@ DEFAULT_CONFIG = {
     "job_id": "",
     "preferred_package": "",
     "check_interval": 10,
-    "auto_rejoin": False,        # Forced OFF by default
+    "auto_rejoin": False,      # Forced OFF
     "discord_webhook": "",
 }
 
 def load_config():
     if os.path.exists(CONFIG_FILE):
         with open(CONFIG_FILE, "r") as f:
-            return json.load(f)
+            config = json.load(f)
+            # Force reset auto_rejoin to OFF if old config exists
+            if "auto_rejoin" not in config or config["auto_rejoin"] is True:
+                config["auto_rejoin"] = False
+                save_config(config)
+            return config
     else:
         with open(CONFIG_FILE, "w") as f:
             json.dump(DEFAULT_CONFIG, f, indent=4)
@@ -59,15 +64,21 @@ def detect_roblox():
 
 def kill_roblox(package):
     subprocess.run(["am", "force-stop", package], check=False, stderr=subprocess.DEVNULL)
+    time.sleep(1.5)  # Give more time to close
 
 def launch_roblox(package, place_id, job_id):
-    if not job_id or job_id.lower() == "none":
+    if not job_id:
         deep_link = f"roblox://placeID={place_id}"
     else:
         deep_link = f"roblox://placeID={place_id}&gameInstanceId={job_id}"
+    
     try:
-        subprocess.run(["am", "start", "-a", "android.intent.action.VIEW", "-d", deep_link, package],
-                       check=True, stderr=subprocess.DEVNULL)
+        subprocess.run([
+            "am", "start", 
+            "-a", "android.intent.action.VIEW", 
+            "-d", deep_link, 
+            package
+        ], check=True, stderr=subprocess.DEVNULL)
         return True
     except:
         return False
@@ -92,22 +103,23 @@ def create_dashboard(status, last_rejoin, uptime, config, package):
     footer = "[1] Start Auto Rejoin    [2] Edit Game    [3] Add Discord Webhook    [4] Toggle Auto Execute    [q] Quit"
     console.print(footer, style="bold yellow")
 
-# Background Auto Rejoin Thread
+# Background Rejoin Thread
 def auto_rejoin_thread(config, stop_event):
-    last_rejoin = None
+    last_rejoin_time = None
     while not stop_event.is_set():
         if not config.get("auto_rejoin"):
             time.sleep(2)
             continue
-            
+
         package = detect_roblox()
         if package:
             try:
                 recents = subprocess.check_output(["dumpsys", "activity", "recents"], text=True).lower()
                 if "roblox" not in recents:
                     kill_roblox(package)
-                    if launch_roblox(package, config["place_id"], config["job_id"]):
-                        last_rejoin = datetime.now().strftime("%H:%M:%S")
+                    success = launch_roblox(package, config["place_id"], config["job_id"])
+                    if success:
+                        last_rejoin_time = datetime.now().strftime("%H:%M:%S")
             except:
                 pass
         time.sleep(config.get("check_interval", 10))
@@ -121,7 +133,6 @@ def main():
     start_time = datetime.now()
     stop_event = threading.Event()
     
-    # Start background thread
     rejoin_thread = threading.Thread(target=auto_rejoin_thread, args=(config, stop_event), daemon=True)
     rejoin_thread.start()
 
@@ -136,30 +147,24 @@ def main():
         if choice == "1":
             config["auto_rejoin"] = True
             save_config(config)
-            console.print("[green]Auto Rejoin Enabled![/green]")
+            console.print("[green]✅ Auto Rejoin Enabled[/green]")
             time.sleep(1.2)
 
         elif choice == "2":
             console.clear()
             console.print("[yellow]=== Edit Game Settings ===[/yellow]\n")
             console.print("[1] Game ID Only\n[2] Private Server")
-            ch = input("\nChoose (1/2): ").strip()
+            ch = input("Choose (1/2): ").strip()
             
             if ch == "1":
-                try:
-                    config["place_id"] = int(input("Enter Place ID: ") or config["place_id"])
-                    config["job_id"] = ""
-                except:
-                    pass
+                config["place_id"] = int(input("Enter Place ID: ") or config["place_id"])
+                config["job_id"] = ""
             elif ch == "2":
-                try:
-                    config["place_id"] = int(input("Enter Place ID: ") or config["place_id"])
-                    config["job_id"] = input("Enter Job ID: ").strip()
-                except:
-                    pass
+                config["place_id"] = int(input("Enter Place ID: ") or config["place_id"])
+                config["job_id"] = input("Enter Job ID: ").strip()
             
             save_config(config)
-            console.print("[green]Game settings saved![/green]")
+            console.print("[green]✅ Game settings saved![/green]")
             time.sleep(1.5)
 
         elif choice == "3":
@@ -169,11 +174,11 @@ def main():
             if webhook:
                 config["discord_webhook"] = webhook
                 save_config(config)
-                console.print("[green]Webhook Saved![/green]")
+                console.print("[green]✅ Webhook Saved![/green]")
             time.sleep(1.5)
 
         elif choice == "4":
-            console.print("[yellow]Auto Execute feature coming soon...[/yellow]")
+            console.print("[yellow]Auto Execute - Coming Soon...[/yellow]")
             time.sleep(1.5)
 
         elif choice == "q":
