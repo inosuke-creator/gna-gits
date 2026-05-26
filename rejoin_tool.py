@@ -50,31 +50,28 @@ def kill_roblox(package):
     time.sleep(3)
 
 def launch_roblox(package, place_id, job_id):
-    console.print(f"[cyan]Trying to open Roblox and join {place_id}...[/cyan]")
+    console.print(f"[cyan]Trying to join game {place_id}...[/cyan]")
     
-    # Strongest method
+    # New Method: Open Roblox then use monkey to simulate open
     try:
-        # Method 1: Direct deep link with flags
+        # Open Roblox main activity
+        subprocess.run(["am", "start", "-n", f"{package}/com.roblox.client.Activity"], 
+                       check=True, stderr=subprocess.DEVNULL)
+        console.print("[green]✅ Roblox app opened via activity[/green]")
+        time.sleep(4)  # Wait for app to load
+        
+        # Try deep link again after opening
         if job_id:
             link = f"roblox://placeID={place_id}&gameInstanceId={job_id}"
         else:
             link = f"roblox://placeID={place_id}"
             
-        subprocess.run(["am", "start", "-a", "android.intent.action.VIEW", "-d", link, "-f", "0x10000000", package], 
+        subprocess.run(["am", "start", "-a", "android.intent.action.VIEW", "-d", link, package], 
                        check=True, stderr=subprocess.DEVNULL)
-        console.print("[green]✅ Launch command sent![/green]")
+        console.print("[green]✅ Deep link sent after opening app[/green]")
         return True
-    except:
-        pass
-
-    # Fallback: Just open Roblox app
-    try:
-        console.print("[yellow]Fallback: Opening Roblox app...[/yellow]")
-        subprocess.run(["am", "start", "-n", f"{package}/com.roblox.client.Activity"], check=True, stderr=subprocess.DEVNULL)
-        console.print("[green]✅ Roblox app opened![/green]")
-        return True
-    except:
-        console.print("[red]Failed to launch Roblox[/red]")
+    except Exception as e:
+        console.print(f"[red]Launch failed: {e}[/red]")
         return False
 
 def create_dashboard(config, package, last_rejoin, uptime):
@@ -113,7 +110,7 @@ def main():
             try:
                 recents = subprocess.check_output(["dumpsys", "activity", "recents"], text=True).lower()
                 if "roblox" not in recents:
-                    console.print("[yellow]🔄 Rejoining Roblox...[/yellow]")
+                    console.print("[yellow]🔄 Rejoining game...[/yellow]")
                     kill_roblox(package)
                     if launch_roblox(package, config["place_id"], config["job_id"]):
                         last_rejoin = datetime.now().strftime("%H:%M:%S")
@@ -125,22 +122,22 @@ def main():
         if choice == "1":
             config["auto_rejoin"] = not config.get("auto_rejoin")
             save_config(config)
-            console.print(f"[green]Auto Rejoin → {'ON' if config['auto_rejoin'] else 'OFF'}[/green]")
+            console.print(f"[green]Auto Rejoin is now {'ON' if config['auto_rejoin'] else 'OFF'}[/green]")
             time.sleep(1)
 
         elif choice == "2":
             console.clear()
             console.print("[yellow]=== Edit Game ===[/yellow]")
-            console.print("1. Game ID\n2. Private Server")
-            ch = input("Choose: ").strip()
+            console.print("1. Game ID Only\n2. Private Server")
+            ch = input("Choose (1/2): ").strip()
             if ch == "1":
-                config["place_id"] = int(input("Place ID: ") or config["place_id"])
+                config["place_id"] = int(input("Enter Place ID: ") or config["place_id"])
                 config["job_id"] = ""
             elif ch == "2":
-                config["place_id"] = int(input("Place ID: ") or config["place_id"])
-                config["job_id"] = input("Job ID: ").strip()
+                config["place_id"] = int(input("Enter Place ID: ") or config["place_id"])
+                config["job_id"] = input("Enter Job ID: ").strip()
             save_config(config)
-            console.print("[green]Saved![/green]")
+            console.print("[green]✅ Saved![/green]")
             time.sleep(1.5)
 
         elif choice == "q":
