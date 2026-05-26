@@ -3,6 +3,7 @@ import time
 import json
 import os
 import sys
+import requests
 from datetime import datetime
 from rich.console import Console
 from rich.live import Live
@@ -13,15 +14,15 @@ from rich import box
 console = Console()
 
 CONFIG_FILE = "rejoin_config.json"
+SCRIPT_URL = "https://raw.githubusercontent.com/inosuke-creator/gna-gits/refs/heads/main/rejoin_tool.py"
 
 DEFAULT_CONFIG = {
     "place_id": 1234567890,
     "job_id": "YOUR_PRIVATE_SERVER_JOB_ID_HERE",
     "preferred_package": "",
     "check_interval": 15,
-    "auto_download": False,
-    "download_url": "",
-    "download_path": "/sdcard/Download/roblox_update.apk"
+    "auto_update": True,
+    "check_update_interval": 1800   
 }
 
 def load_config():
@@ -31,9 +32,22 @@ def load_config():
     else:
         with open(CONFIG_FILE, "w") as f:
             json.dump(DEFAULT_CONFIG, f, indent=4)
-        console.print(f"[green]✅ Created config file: {CONFIG_FILE}[/green]")
-        console.print("[yellow]Please edit place_id and job_id, then restart the tool.[/yellow]")
+        console.print(f"[green]✅ Config created: {CONFIG_FILE}[/green]")
+        console.print("[yellow]Please edit place_id and job_id then restart.[/yellow]")
         sys.exit(0)
+
+def download_script():
+    try:
+        console.print("[cyan]🔄 Checking for updates...[/cyan]")
+        r = requests.get(SCRIPT_URL, timeout=10)
+        r.raise_for_status()
+        with open(__file__, "w", encoding="utf-8") as f:
+            f.write(r.text)
+        console.print("[green]✅ Tool Updated! Please restart.[/green]")
+        return True
+    except:
+        console.print("[red]Update check failed.[/red]")
+        return False
 
 def get_all_roblox_packages():
     try:
@@ -45,16 +59,14 @@ def get_all_roblox_packages():
 
 def detect_roblox():
     config = load_config()
-    roblox_packages = get_all_roblox_packages()
-    
-    if not roblox_packages:
+    packages = get_all_roblox_packages()
+    if not packages:
         return None, []
     
     preferred = config.get("preferred_package", "").strip()
-    if preferred and preferred in roblox_packages:
-        return preferred, roblox_packages
-    
-    return roblox_packages[0], roblox_packages
+    if preferred and preferred in packages:
+        return preferred, packages
+    return packages[0], packages
 
 def kill_roblox(package):
     try:
@@ -66,80 +78,77 @@ def kill_roblox(package):
 def launch_roblox(package, place_id, job_id):
     deep_link = f"roblox://placeID={place_id}&gameInstanceId={job_id}"
     try:
-        subprocess.run([
-            "am", "start",
-            "-a", "android.intent.action.VIEW",
-            "-d", deep_link,
-            package
-        ], check=True, stderr=subprocess.DEVNULL)
+        subprocess.run(["am", "start", "-a", "android.intent.action.VIEW", "-d", deep_link, package],
+                       check=True, stderr=subprocess.DEVNULL)
         return True
     except:
         return False
 
-def create_dashboard(current_package, all_packages, status, last_rejoin, uptime):
-    table = Table(box=box.ROUNDED, title="Roblox Auto Rejoin Tool", title_style="bold cyan")
-    table.add_column("Status", style="bold")
+def create_dashboard(current_package, all_packages, status, last_rejoin, uptime, config):
+    table = Table(box=box.ROUNDED, title="🔄 Rejoin Tool - Auto Reconnect Manager", title_style="bold cyan")
+    table.add_column("Item", style="bold")
     table.add_column("Value", style="green")
 
-    table.add_row("Current Package", current_package or "None")
-    table.add_row("All Detected", ", ".join(all_packages) if all_packages else "None")
-    table.add_row("Rejoin Status", status)
+    table.add_row("Current Package", current_package or "[red]None[/red]")
+    table.add_row("Detected Packages", ", ".join(all_packages) if all_packages else "[red]None[/red]")
+    table.add_row("Status", status)
     table.add_row("Last Rejoin", last_rejoin or "Never")
     table.add_row("Uptime", uptime)
-    table.add_row("Place ID", str(load_config()["place_id"]))
-    
-    return Panel(table, border_style="blue")
+    table.add_row("Place ID", str(config["place_id"]))
+    table.add_row("Check Interval", f"{config['check_interval']}s")
+
+    footer = "Controls: [q] Quit • [r] Manual Rejoin • [u] Update"
+    return Panel(table, border_style="blue", subtitle=footer)
 
 def main():
     console.clear()
-    console.print("[bold magenta]=== Roblox Auto Rejoin Tool with Dashboard ===[/bold magenta]\n")
+    console.print("[bold magenta]=== Rejoin Tool v6 (Free Version) ===[/bold magenta]\n")
     
     config = load_config()
     start_time = datetime.now()
     last_rejoin = None
     status = "Starting..."
+    last_update_check = time.time()
 
     with Live(refresh_per_second=2, console=console) as live:
         while True:
-            current_time = datetime.now()
-            uptime = str(current_time - start_time).split('.')[0]
-            
+            uptime = str(datetime.now() - start_time).split('.')[0]
+
+            if config.get("auto_update") and (time.time() - last_update_check > config.get("check_update_interval")):
+                download_script()
+                last_update_check = time.time()
+
             package, all_packages = detect_roblox()
-            
+
             if not package:
-                status = "[red]No Roblox package detected[/red]"
-                live.update(create_dashboard(None, [], status, last_rejoin, uptime))
-                time.sleep(config["check_interval"])
-                continue
-
-            try:
-                recents = subprocess.check_output(["dumpsys", "activity", "recents"], text=True).lower()
-                if "roblox" not in recents:
-                    status = "[yellow]Rejoining...[/yellow]"
-                    live.update(create_dashboard(package, all_packages, status, last_rejoin, uptime))
-                    
-                    kill_roblox(package)
-                    success = launch_roblox(package, config["place_id"], config["job_id"])
-                    
-                    if success:
-                        last_rejoin = datetime.now().strftime("%H:%M:%S")
-                        status = "[green]Rejoined successfully[/green]"
+                status = "[red]No Roblox Detected[/red]"
+            else:
+                try:
+                    recents = subprocess.check_output(["dumpsys", "activity", "recents"], text=True).lower()
+                    if "roblox" not in recents:
+                        status = "[yellow]Rejoining...[/yellow]"
+                        live.update(create_dashboard(package, all_packages, status, last_rejoin, uptime, config))
+                        
+                        kill_roblox(package)
+                        if launch_roblox(package, config["place_id"], config["job_id"]):
+                            last_rejoin = datetime.now().strftime("%H:%M:%S")
+                            status = "[green]✅ Rejoined Successfully[/green]"
+                        else:
+                            status = "[red]Rejoin Failed[/red]"
                     else:
-                        status = "[red]Rejoin failed[/red]"
-                else:
-                    status = "[green]Roblox is running[/green]"
-            except:
-                status = "[yellow]Checking...[/yellow]"
-                launch_roblox(package, config["place_id"], config["job_id"])
-                last_rejoin = datetime.now().strftime("%H:%M:%S")
+                        status = "[green]✅ Roblox is Running[/green]"
+                except:
+                    status = "[yellow]Monitoring...[/yellow]"
+                    launch_roblox(package, config["place_id"], config["job_id"])
+                    last_rejoin = datetime.now().strftime("%H:%M:%S")
 
-            live.update(create_dashboard(package, all_packages, status, last_rejoin, uptime))
+            live.update(create_dashboard(package, all_packages, status, last_rejoin, uptime, config))
             time.sleep(config["check_interval"])
 
 if __name__ == "__main__":
     try:
         main()
     except KeyboardInterrupt:
-        console.print("\n[bold red]Tool stopped by user.[/bold red]")
+        console.print("\n[bold red]Tool Stopped.[/bold red]")
     except Exception as e:
         console.print(f"[bold red]Error:[/bold red] {e}")
