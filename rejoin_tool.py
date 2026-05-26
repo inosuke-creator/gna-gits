@@ -15,9 +15,9 @@ console = Console()
 CONFIG_FILE = "rejoin_config.json"
 
 DEFAULT_CONFIG = {
-    "place_id": 89469502395769,   # Your game
+    "place_id": 89469502395769,   # Your Kick a Lucky Block game
     "job_id": "",
-    "check_interval": 8,
+    "check_interval": 10,
     "auto_rejoin": False,
     "discord_webhook": "",
 }
@@ -51,27 +51,40 @@ def kill_roblox(package):
     time.sleep(2.5)
 
 def launch_roblox(package, place_id, job_id):
-    if not job_id:
-        deep_link = f"roblox://placeID={place_id}"
-    else:
-        deep_link = f"roblox://placeID={place_id}&gameInstanceId={job_id}"
+    console.print(f"[cyan]Trying to join Place ID: {place_id}[/cyan]")
     
-    console.print(f"[cyan]→ Launching: {deep_link}[/cyan]")
+    # Method 1: Standard deep link
+    if job_id:
+        deep_link = f"roblox://placeID={place_id}&gameInstanceId={job_id}"
+    else:
+        deep_link = f"roblox://placeID={place_id}"
     
     try:
-        # Stronger launch command
         subprocess.run([
-            "am", "start",
-            "-a", "android.intent.action.VIEW",
+            "am", "start", 
+            "-a", "android.intent.action.VIEW", 
             "-d", deep_link,
-            "-f", "0x14000000",   # New Task + Clear Top
+            "-f", "0x14000000",
             package
         ], check=True, stderr=subprocess.DEVNULL)
-        
-        console.print("[green]✅ Roblox launch command sent![/green]")
+        console.print("[green]✅ Launch Method 1 sent![/green]")
         return True
-    except Exception as e:
-        console.print(f"[red]Launch failed: {e}[/red]")
+    except:
+        pass
+
+    # Method 2: Alternative intent (more aggressive)
+    try:
+        console.print("[yellow]Trying alternative launch method...[/yellow]")
+        subprocess.run([
+            "am", "start",
+            "-n", f"{package}/com.roblox.client.Activity",
+            "-a", "android.intent.action.VIEW",
+            "-d", f"roblox://placeID={place_id}"
+        ], check=True, stderr=subprocess.DEVNULL)
+        console.print("[green]✅ Alternative launch sent![/green]")
+        return True
+    except:
+        console.print("[red]All launch methods failed.[/red]")
         return False
 
 def create_dashboard(config, package, last_rejoin, uptime):
@@ -110,7 +123,7 @@ def main():
             try:
                 recents = subprocess.check_output(["dumpsys", "activity", "recents"], text=True).lower()
                 if "roblox" not in recents:
-                    console.print("[yellow]🔄 Roblox closed → Rejoining now...[/yellow]")
+                    console.print("[yellow]🔄 Roblox not running → Rejoining...[/yellow]")
                     kill_roblox(package)
                     if launch_roblox(package, config["place_id"], config["job_id"]):
                         last_rejoin = datetime.now().strftime("%H:%M:%S")
