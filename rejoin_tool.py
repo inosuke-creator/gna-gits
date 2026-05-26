@@ -17,7 +17,7 @@ CONFIG_FILE = "rejoin_config.json"
 DEFAULT_CONFIG = {
     "place_id": 1234567890,
     "job_id": "",
-    "check_interval": 8,
+    "check_interval": 10,
     "auto_rejoin": False,
     "discord_webhook": "",
 }
@@ -26,7 +26,7 @@ def load_config():
     if os.path.exists(CONFIG_FILE):
         with open(CONFIG_FILE, "r") as f:
             config = json.load(f)
-            config["auto_rejoin"] = False   # Force OFF on load
+            config["auto_rejoin"] = False  # Force OFF
             return config
     else:
         with open(CONFIG_FILE, "w") as f:
@@ -56,14 +56,11 @@ def launch_roblox(package, place_id, job_id):
     else:
         deep_link = f"roblox://placeID={place_id}&gameInstanceId={job_id}"
     
-    console.print(f"[cyan]→ Attempting join: {deep_link}[/cyan]")
     try:
         subprocess.run(["am", "start", "-a", "android.intent.action.VIEW", "-d", deep_link, package], 
                        check=True, stderr=subprocess.DEVNULL)
-        console.print("[green]✅ Rejoin command sent successfully![/green]")
         return True
-    except Exception as e:
-        console.print(f"[red]Launch failed: {e}[/red]")
+    except:
         return False
 
 def create_dashboard(config, package, last_rejoin, uptime):
@@ -79,10 +76,9 @@ def create_dashboard(config, package, last_rejoin, uptime):
     table.add_row("Job ID", config.get("job_id")[:20] + "..." if config.get("job_id") else "None")
     table.add_row("Last Rejoin", last_rejoin or "Never")
     table.add_row("Uptime", uptime)
-    table.add_row("Discord Webhook", "[green]Set[/green]" if config.get("discord_webhook") else "[red]Not Set[/red]")
 
     console.print(Panel(table, border_style="blue"))
-    console.print("\n[1] Start Auto Rejoin   [2] Edit Game   [3] Add Discord Webhook   [q] Quit", style="bold yellow")
+    console.print("\n[1] Toggle Auto Rejoin   [2] Edit Game   [3] Add Discord   [q] Quit", style="bold yellow")
 
 # ================== MAIN ==================
 def main():
@@ -92,31 +88,33 @@ def main():
     config = load_config()
     start_time = datetime.now()
     last_rejoin = None
-    package = get_roblox_package()
 
     while True:
         uptime = str(datetime.now() - start_time).split('.')[0]
+        package = get_roblox_package()
 
         create_dashboard(config, package, last_rejoin, uptime)
 
-        # Auto Rejoin Logic
+        # === AUTO REJOIN LOGIC (This part worked before) ===
         if config.get("auto_rejoin") and package:
             try:
                 recents = subprocess.check_output(["dumpsys", "activity", "recents"], text=True).lower()
                 if "roblox" not in recents:
-                    console.print("[yellow]🔄 Roblox not detected → Rejoining...[/yellow]")
+                    console.print("[yellow]🔄 Rejoining Roblox...[/yellow]")
                     kill_roblox(package)
                     if launch_roblox(package, config["place_id"], config["job_id"]):
                         last_rejoin = datetime.now().strftime("%H:%M:%S")
+                        console.print("[green]✅ Rejoined![/green]")
             except:
                 pass
 
+        # Menu (Non-blocking style)
         choice = input("\nEnter option: ").strip().lower()
 
         if choice == "1":
-            config["auto_rejoin"] = True
+            config["auto_rejoin"] = not config.get("auto_rejoin")
             save_config(config)
-            console.print("[green]✅ Auto Rejoin Turned ON[/green]")
+            console.print(f"[green]Auto Rejoin is now {'ON' if config['auto_rejoin'] else 'OFF'}[/green]")
             time.sleep(1)
 
         elif choice == "2":
@@ -131,7 +129,7 @@ def main():
                 config["place_id"] = int(input("Place ID: ") or config["place_id"])
                 config["job_id"] = input("Job ID: ").strip()
             save_config(config)
-            console.print("[green]✅ Saved![/green]")
+            console.print("[green]Saved![/green]")
             time.sleep(1.5)
 
         elif choice == "3":
@@ -139,7 +137,7 @@ def main():
             console.print("[yellow]Enter Discord Webhook URL:[/yellow]")
             config["discord_webhook"] = input("> ").strip()
             save_config(config)
-            console.print("[green]✅ Saved![/green]")
+            console.print("[green]Saved![/green]")
             time.sleep(1.5)
 
         elif choice == "q":
@@ -155,6 +153,3 @@ if __name__ == "__main__":
     except KeyboardInterrupt:
         console.clear()
         console.print("[red]Tool Stopped.[/red]")
-    except Exception as e:
-        console.clear()
-        console.print(f"[red]Error: {e}[/red]")
