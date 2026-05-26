@@ -5,151 +5,141 @@ import os
 import sys
 from datetime import datetime
 from rich.console import Console
+from rich.live import Live
 from rich.table import Table
 from rich.panel import Panel
 from rich import box
 
 console = Console()
 
-# ================== CONFIG ==================
 CONFIG_FILE = "rejoin_config.json"
 
 DEFAULT_CONFIG = {
-    "place_id": 89469502395769,
-    "job_id": "",
-    "check_interval": 8,
-    "auto_rejoin": False,
+    "place_id": 1234567890,
+    "job_id": "YOUR_PRIVATE_SERVER_JOB_ID_HERE",
+    "preferred_package": "",
+    "check_interval": 15,
+    "auto_download": False,
+    "download_url": "",
+    "download_path": "/sdcard/Download/roblox_update.apk"
 }
 
 def load_config():
     if os.path.exists(CONFIG_FILE):
         with open(CONFIG_FILE, "r") as f:
-            config = json.load(f)
-            config["auto_rejoin"] = False
-            return config
+            return json.load(f)
     else:
         with open(CONFIG_FILE, "w") as f:
             json.dump(DEFAULT_CONFIG, f, indent=4)
-        return DEFAULT_CONFIG.copy()
+        console.print(f"[green]✅ Created config file: {CONFIG_FILE}[/green]")
+        console.print("[yellow]Please edit place_id and job_id, then restart the tool.[/yellow]")
+        sys.exit(0)
 
-def save_config(config):
-    with open(CONFIG_FILE, "w") as f:
-        json.dump(config, f, indent=4)
-
-def get_roblox_package():
+def get_all_roblox_packages():
     try:
         result = subprocess.check_output(["pm", "list", "packages"], text=True)
         packages = [line.replace("package:", "").strip() for line in result.splitlines() if line.strip()]
-        roblox_pkgs = [pkg for pkg in packages if pkg.startswith("com.roblox.")]
-        return roblox_pkgs[0] if roblox_pkgs else None
+        return [pkg for pkg in packages if pkg.startswith("com.roblox.")]
     except:
-        return None
+        return []
+
+def detect_roblox():
+    config = load_config()
+    roblox_packages = get_all_roblox_packages()
+    
+    if not roblox_packages:
+        return None, []
+    
+    preferred = config.get("preferred_package", "").strip()
+    if preferred and preferred in roblox_packages:
+        return preferred, roblox_packages
+    
+    return roblox_packages[0], roblox_packages
 
 def kill_roblox(package):
-    subprocess.run(["am", "force-stop", package], check=False, stderr=subprocess.DEVNULL)
-    time.sleep(3)
-
-def launch_roblox(package, place_id, job_id):
-    console.print(f"[cyan]Trying to join game {place_id}...[/cyan]")
-    
-    # New Method: Open Roblox then use monkey to simulate open
     try:
-        # Open Roblox main activity
-        subprocess.run(["am", "start", "-n", f"{package}/com.roblox.client.Activity"], 
-                       check=True, stderr=subprocess.DEVNULL)
-        console.print("[green]✅ Roblox app opened via activity[/green]")
-        time.sleep(4)  # Wait for app to load
-        
-        # Try deep link again after opening
-        if job_id:
-            link = f"roblox://placeID={place_id}&gameInstanceId={job_id}"
-        else:
-            link = f"roblox://placeID={place_id}"
-            
-        subprocess.run(["am", "start", "-a", "android.intent.action.VIEW", "-d", link, package], 
-                       check=True, stderr=subprocess.DEVNULL)
-        console.print("[green]✅ Deep link sent after opening app[/green]")
+        subprocess.run(["am", "force-stop", package], check=True, stderr=subprocess.DEVNULL)
         return True
-    except Exception as e:
-        console.print(f"[red]Launch failed: {e}[/red]")
+    except:
         return False
 
-def create_dashboard(config, package, last_rejoin, uptime):
-    console.clear()
-    
-    table = Table(box=box.SIMPLE_HEAVY, title="🔄 Rejoin Tool - Free Version", title_style="bold cyan", expand=True)
-    table.add_column("Feature", style="bold", width=22)
-    table.add_column("Status", style="green")
+def launch_roblox(package, place_id, job_id):
+    deep_link = f"roblox://placeID={place_id}&gameInstanceId={job_id}"
+    try:
+        subprocess.run([
+            "am", "start",
+            "-a", "android.intent.action.VIEW",
+            "-d", deep_link,
+            package
+        ], check=True, stderr=subprocess.DEVNULL)
+        return True
+    except:
+        return False
 
-    table.add_row("Auto Rejoin", "[green]ON[/green]" if config.get("auto_rejoin") else "[red]OFF[/red]")
-    table.add_row("Current Package", package or "[red]Not Detected[/red]")
-    table.add_row("Place ID", str(config.get("place_id")))
-    table.add_row("Job ID", config.get("job_id")[:20] + "..." if config.get("job_id") else "None")
+def create_dashboard(current_package, all_packages, status, last_rejoin, uptime):
+    table = Table(box=box.ROUNDED, title="Roblox Auto Rejoin Tool", title_style="bold cyan")
+    table.add_column("Status", style="bold")
+    table.add_column("Value", style="green")
+
+    table.add_row("Current Package", current_package or "None")
+    table.add_row("All Detected", ", ".join(all_packages) if all_packages else "None")
+    table.add_row("Rejoin Status", status)
     table.add_row("Last Rejoin", last_rejoin or "Never")
     table.add_row("Uptime", uptime)
+    table.add_row("Place ID", str(load_config()["place_id"]))
+    
+    return Panel(table, border_style="blue")
 
-    console.print(Panel(table, border_style="blue"))
-    console.print("\n[1] Toggle Auto Rejoin   [2] Edit Game   [q] Quit", style="bold yellow")
-
-# ================== MAIN ==================
 def main():
     console.clear()
-    console.print("[bold magenta]=== Rejoin Tool - Free Version ===[/bold magenta]\n")
+    console.print("[bold magenta]=== Roblox Auto Rejoin Tool with Dashboard ===[/bold magenta]\n")
     
     config = load_config()
     start_time = datetime.now()
     last_rejoin = None
+    status = "Starting..."
 
-    while True:
-        uptime = str(datetime.now() - start_time).split('.')[0]
-        package = get_roblox_package()
+    with Live(refresh_per_second=2, console=console) as live:
+        while True:
+            current_time = datetime.now()
+            uptime = str(current_time - start_time).split('.')[0]
+            
+            package, all_packages = detect_roblox()
+            
+            if not package:
+                status = "[red]No Roblox package detected[/red]"
+                live.update(create_dashboard(None, [], status, last_rejoin, uptime))
+                time.sleep(config["check_interval"])
+                continue
 
-        create_dashboard(config, package, last_rejoin, uptime)
-
-        if config.get("auto_rejoin") and package:
             try:
                 recents = subprocess.check_output(["dumpsys", "activity", "recents"], text=True).lower()
                 if "roblox" not in recents:
-                    console.print("[yellow]🔄 Rejoining game...[/yellow]")
+                    status = "[yellow]Rejoining...[/yellow]"
+                    live.update(create_dashboard(package, all_packages, status, last_rejoin, uptime))
+                    
                     kill_roblox(package)
-                    if launch_roblox(package, config["place_id"], config["job_id"]):
+                    success = launch_roblox(package, config["place_id"], config["job_id"])
+                    
+                    if success:
                         last_rejoin = datetime.now().strftime("%H:%M:%S")
+                        status = "[green]Rejoined successfully[/green]"
+                    else:
+                        status = "[red]Rejoin failed[/red]"
+                else:
+                    status = "[green]Roblox is running[/green]"
             except:
-                pass
+                status = "[yellow]Checking...[/yellow]"
+                launch_roblox(package, config["place_id"], config["job_id"])
+                last_rejoin = datetime.now().strftime("%H:%M:%S")
 
-        choice = input("\nEnter option: ").strip().lower()
-
-        if choice == "1":
-            config["auto_rejoin"] = not config.get("auto_rejoin")
-            save_config(config)
-            console.print(f"[green]Auto Rejoin is now {'ON' if config['auto_rejoin'] else 'OFF'}[/green]")
-            time.sleep(1)
-
-        elif choice == "2":
-            console.clear()
-            console.print("[yellow]=== Edit Game ===[/yellow]")
-            console.print("1. Game ID Only\n2. Private Server")
-            ch = input("Choose (1/2): ").strip()
-            if ch == "1":
-                config["place_id"] = int(input("Enter Place ID: ") or config["place_id"])
-                config["job_id"] = ""
-            elif ch == "2":
-                config["place_id"] = int(input("Enter Place ID: ") or config["place_id"])
-                config["job_id"] = input("Enter Job ID: ").strip()
-            save_config(config)
-            console.print("[green]✅ Saved![/green]")
-            time.sleep(1.5)
-
-        elif choice == "q":
-            console.clear()
-            console.print("[red]Stopped.[/red]")
-            break
-
-        time.sleep(1)
+            live.update(create_dashboard(package, all_packages, status, last_rejoin, uptime))
+            time.sleep(config["check_interval"])
 
 if __name__ == "__main__":
     try:
         main()
     except KeyboardInterrupt:
-        console.clear()
-        console.print("[red]Stopped.[/red]")
+        console.print("\n[bold red]Tool stopped by user.[/bold red]")
+    except Exception as e:
+        console.print(f"[bold red]Error:[/bold red] {e}")
