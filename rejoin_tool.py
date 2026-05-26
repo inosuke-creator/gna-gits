@@ -6,7 +6,6 @@ import sys
 import requests
 from datetime import datetime
 from rich.console import Console
-from rich.live import Live
 from rich.table import Table
 from rich.panel import Panel
 from rich import box
@@ -22,7 +21,7 @@ DEFAULT_CONFIG = {
     "job_id": "",
     "preferred_package": "",
     "check_interval": 12,
-    "auto_rejoin": False,
+    "auto_rejoin": False,          # Default OFF as requested
     "discord_webhook": "",
 }
 
@@ -73,23 +72,23 @@ def launch_roblox(package, place_id, job_id):
         return False
 
 def create_dashboard(status, last_rejoin, uptime, config, package):
-    console.clear()   # ← Clears screen every time
+    console.clear()                    # Strong clear
     
-    table = Table(box=box.SIMPLE_HEAVY, title="🔄 Rejoin Tool - Free Version", title_style="bold cyan", expand=True)
-    table.add_column("Feature", style="bold", ratio=1)
-    table.add_column("Status", style="green", ratio=2)
+    table = Table(box=box.SIMPLE_HEAVY, title="🔄 Rejoin Tool - Free Version", title_style="bold cyan", expand=True, padding=(0,1))
+    table.add_column("Feature", style="bold", width=18)
+    table.add_column("Status", style="green")
 
     table.add_row("Auto Rejoin", "[green]ON[/green]" if config.get("auto_rejoin") else "[red]OFF[/red]")
     table.add_row("Current Package", package or "[red]Not Detected[/red]")
     table.add_row("Place ID", str(config.get("place_id", "Not Set")))
-    table.add_row("Job ID", config.get("job_id")[:20] + "..." if config.get("job_id") else "None")
+    table.add_row("Job ID", (config.get("job_id")[:18] + "...") if config.get("job_id") else "None")
     table.add_row("Last Rejoin", last_rejoin or "Never")
     table.add_row("Uptime", uptime)
     table.add_row("Discord Webhook", "[green]Set[/green]" if config.get("discord_webhook") else "[red]Not Set[/red]")
 
-    footer = "[1] Start Auto Rejoin    [2] Edit Game    [3] Add Discord Webhook    [4] Toggle Auto Execute    [q] Quit"
+    console.print(Panel(table, border_style="blue", padding=(1,2)))
     
-    console.print(Panel(table, border_style="blue"))
+    footer = "[1] Start Auto Rejoin    [2] Edit Game    [3] Add Discord Webhook    [4] Toggle Auto Execute    [q] Quit"
     console.print(footer, style="bold yellow")
 
 # ================== MAIN ==================
@@ -112,45 +111,49 @@ def main():
         if choice == "1":
             config["auto_rejoin"] = True
             save_config(config)
-            console.print("[green]Auto Rejoin Enabled![/green]")
-            time.sleep(1)
+            console.print("[green]Auto Rejoin → Enabled[/green]")
+            time.sleep(1.2)
 
         elif choice == "2":
             console.clear()
-            console.print("[yellow]=== Edit Game Settings ===[/yellow]")
+            console.print("[yellow]=== Edit Game Settings ===[/yellow]\n")
             console.print("[1] Game ID Only")
             console.print("[2] Private Server")
-            ch = input("Choose: ").strip()
+            ch = input("\nChoose (1/2): ").strip()
+            
             if ch == "1":
                 config["place_id"] = int(input("Enter Place ID: ") or config["place_id"])
                 config["job_id"] = ""
             elif ch == "2":
                 config["place_id"] = int(input("Enter Place ID: ") or config["place_id"])
                 config["job_id"] = input("Enter Job ID: ").strip()
+            
             save_config(config)
-            console.print("[green]Game settings updated![/green]")
+            console.print("[green]Game settings saved![/green]")
             time.sleep(1.5)
 
         elif choice == "3":
             console.clear()
             console.print("[yellow]Enter Discord Webhook URL:[/yellow]")
             webhook = input("> ").strip()
-            if webhook:
+            if webhook.startswith("https://discord.com/api/webhooks"):
                 config["discord_webhook"] = webhook
                 save_config(config)
                 console.print("[green]Discord Webhook Saved![/green]")
+            else:
+                console.print("[red]Invalid Webhook URL[/red]")
             time.sleep(1.5)
 
         elif choice == "4":
-            console.print("[yellow]Auto Execute feature coming soon...[/yellow]")
+            console.print("[yellow]Auto Execute - Coming Soon...[/yellow]")
             time.sleep(1.5)
 
         elif choice == "q":
             console.clear()
             console.print("[red]Tool Stopped.[/red]")
-            break
+            sys.exit(0)
 
-        # Background Auto Rejoin
+        # Auto Rejoin Logic
         if config.get("auto_rejoin") and package:
             try:
                 recents = subprocess.check_output(["dumpsys", "activity", "recents"], text=True).lower()
@@ -161,7 +164,7 @@ def main():
             except:
                 pass
 
-        time.sleep(0.5)
+        time.sleep(0.8)
 
 if __name__ == "__main__":
     try:
@@ -170,4 +173,5 @@ if __name__ == "__main__":
         console.clear()
         console.print("[red]Tool Stopped.[/red]")
     except Exception as e:
+        console.clear()
         console.print(f"[red]Error: {e}[/red]")
