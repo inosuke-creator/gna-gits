@@ -15,9 +15,9 @@ console = Console()
 CONFIG_FILE = "rejoin_config.json"
 
 DEFAULT_CONFIG = {
-    "place_id": 1234567890,
+    "place_id": 89469502395769,   # Your game
     "job_id": "",
-    "check_interval": 10,
+    "check_interval": 8,
     "auto_rejoin": False,
     "discord_webhook": "",
 }
@@ -26,7 +26,7 @@ def load_config():
     if os.path.exists(CONFIG_FILE):
         with open(CONFIG_FILE, "r") as f:
             config = json.load(f)
-            config["auto_rejoin"] = False  # Force OFF
+            config["auto_rejoin"] = False
             return config
     else:
         with open(CONFIG_FILE, "w") as f:
@@ -48,7 +48,7 @@ def get_roblox_package():
 
 def kill_roblox(package):
     subprocess.run(["am", "force-stop", package], check=False, stderr=subprocess.DEVNULL)
-    time.sleep(2)
+    time.sleep(2.5)
 
 def launch_roblox(package, place_id, job_id):
     if not job_id:
@@ -56,11 +56,22 @@ def launch_roblox(package, place_id, job_id):
     else:
         deep_link = f"roblox://placeID={place_id}&gameInstanceId={job_id}"
     
+    console.print(f"[cyan]→ Launching: {deep_link}[/cyan]")
+    
     try:
-        subprocess.run(["am", "start", "-a", "android.intent.action.VIEW", "-d", deep_link, package], 
-                       check=True, stderr=subprocess.DEVNULL)
+        # Stronger launch command
+        subprocess.run([
+            "am", "start",
+            "-a", "android.intent.action.VIEW",
+            "-d", deep_link,
+            "-f", "0x14000000",   # New Task + Clear Top
+            package
+        ], check=True, stderr=subprocess.DEVNULL)
+        
+        console.print("[green]✅ Roblox launch command sent![/green]")
         return True
-    except:
+    except Exception as e:
+        console.print(f"[red]Launch failed: {e}[/red]")
         return False
 
 def create_dashboard(config, package, last_rejoin, uptime):
@@ -95,20 +106,17 @@ def main():
 
         create_dashboard(config, package, last_rejoin, uptime)
 
-        # === AUTO REJOIN LOGIC (This part worked before) ===
         if config.get("auto_rejoin") and package:
             try:
                 recents = subprocess.check_output(["dumpsys", "activity", "recents"], text=True).lower()
                 if "roblox" not in recents:
-                    console.print("[yellow]🔄 Rejoining Roblox...[/yellow]")
+                    console.print("[yellow]🔄 Roblox closed → Rejoining now...[/yellow]")
                     kill_roblox(package)
                     if launch_roblox(package, config["place_id"], config["job_id"]):
                         last_rejoin = datetime.now().strftime("%H:%M:%S")
-                        console.print("[green]✅ Rejoined![/green]")
             except:
                 pass
 
-        # Menu (Non-blocking style)
         choice = input("\nEnter option: ").strip().lower()
 
         if choice == "1":
@@ -123,13 +131,13 @@ def main():
             console.print("1. Game ID Only\n2. Private Server")
             ch = input("Choose (1/2): ").strip()
             if ch == "1":
-                config["place_id"] = int(input("Place ID: ") or config["place_id"])
+                config["place_id"] = int(input("Enter Place ID: ") or config["place_id"])
                 config["job_id"] = ""
             elif ch == "2":
-                config["place_id"] = int(input("Place ID: ") or config["place_id"])
-                config["job_id"] = input("Job ID: ").strip()
+                config["place_id"] = int(input("Enter Place ID: ") or config["place_id"])
+                config["job_id"] = input("Enter Job ID: ").strip()
             save_config(config)
-            console.print("[green]Saved![/green]")
+            console.print("[green]✅ Saved![/green]")
             time.sleep(1.5)
 
         elif choice == "3":
@@ -137,7 +145,7 @@ def main():
             console.print("[yellow]Enter Discord Webhook URL:[/yellow]")
             config["discord_webhook"] = input("> ").strip()
             save_config(config)
-            console.print("[green]Saved![/green]")
+            console.print("[green]✅ Saved![/green]")
             time.sleep(1.5)
 
         elif choice == "q":
@@ -145,7 +153,7 @@ def main():
             console.print("[red]Tool Stopped.[/red]")
             break
 
-        time.sleep(0.8)
+        time.sleep(1)
 
 if __name__ == "__main__":
     try:
